@@ -10,7 +10,8 @@ st.caption("সৃষ্টি ও নির্দেশনায়: খোরশ�
 try:
     api_key = st.secrets["GOOGLE_API_KEY"]
     genai.configure(api_key=api_key)
-    model = genai.GenerativeModel('gemini-1.5-flash')
+    # মডেলের নাম পরিবর্তন করে লেটেস্ট ভার্সন দেওয়া হয়েছে
+    model = genai.GenerativeModel('gemini-1.5-flash-latest') 
 except Exception as e:
     st.error("এপিআই কি (API Key) সেটিংস এ কোনো সমস্যা হয়েছে। দয়া করে Secrets চেক করুন।")
 
@@ -32,9 +33,11 @@ if prompt := st.chat_input("স্যার, আমি আপনার জন্
     # এআই রেসপন্স
     with st.chat_message("assistant"):
         try:
+            # রেসপন্স জেনারেট করা
             response = model.generate_content(prompt)
             st.markdown(response.text)
             st.session_state.messages.append({"role": "assistant", "content": response.text})
         except Exception as e:
+            # এরর মেসেজ হ্যান্ডলিং
             st.error(f"দুঃখিত খোরশেদ আলম স্যার, একটি সমস্যা হয়েছে: {str(e)}")
             
