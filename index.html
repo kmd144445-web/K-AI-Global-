@@ -10,12 +10,13 @@
         header h1 { margin: 0; color: #3b82f6; font-size: 24px; }
         header p { margin: 5px 0 0; font-size: 14px; opacity: 0.8; }
         #chat-window { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 15px; }
-        .msg { max-width: 80%; padding: 12px 18px; border-radius: 20px; font-size: 16px; line-height: 1.5; }
+        .msg { max-width: 80%; padding: 12px 18px; border-radius: 20px; font-size: 16px; line-height: 1.5; word-wrap: break-word; }
         .user-msg { align-self: flex-end; background: #3b82f6; color: white; border-bottom-right-radius: 2px; }
         .ai-msg { align-self: flex-start; background: #334155; color: #f1f5f9; border-bottom-left-radius: 2px; }
         .input-area { background: #1e293b; padding: 15px; display: flex; gap: 10px; }
         input { flex: 1; padding: 12px; border-radius: 25px; border: none; outline: none; background: #334155; color: white; }
         button { background: #3b82f6; color: white; border: none; padding: 10px 20px; border-radius: 25px; cursor: pointer; font-weight: bold; }
+        button:disabled { background: #64748b; cursor: not-allowed; }
     </style>
 </head>
 <body>
@@ -31,19 +32,25 @@
 
 <div class="input-area">
     <input type="text" id="userInput" placeholder="আপনার নির্দেশ লিখুন..." onkeypress="if(event.key==='Enter') sendMessage()">
-    <button onclick="sendMessage()">পাঠান</button>
+    <button id="sendBtn" onclick="sendMessage()">পাঠান</button>
 </div>
 
 <script>
     async function sendMessage() {
         const input = document.getElementById('userInput');
+        const btn = document.getElementById('sendBtn');
         const text = input.value.trim();
+        
         if (!text) return;
 
         appendMessage(text, 'user-msg');
         input.value = '';
+        
+        // বাটন ডিজেবল করা যাতে বার বার ক্লিক না হয়
+        btn.disabled = true;
+        const loadingMsg = appendMessage("K-AI চিন্তা করছে...", 'ai-msg');
 
-        // স্যার, এখানে আপনার Google AI API Key-টি বসাতে হবে।
+        // আপনার Google AI API Key
         const API_KEY = "AIzaSyDH-0iHJNewMI3AyPftTZYL0deELkTXApU"; 
 
         try {
@@ -52,11 +59,24 @@
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ contents: [{ parts: [{ text: text }] }] })
             });
+
             const data = await response.json();
-            const aiText = data.candidates[0].content.parts[0].text;
-            appendMessage(aiText, 'ai-msg');
+            
+            // লোডিং মেসেজ সরিয়ে আসল উত্তর দেওয়া
+            loadingMsg.remove();
+
+            if (data.candidates && data.candidates[0].content.parts[0].text) {
+                const aiText = data.candidates[0].content.parts[0].text;
+                appendMessage(aiText, 'ai-msg');
+            } else {
+                throw new Error("Invalid Response");
+            }
         } catch (e) {
-            appendMessage("দুঃখিত স্যার, API Key বা কানেকশনে সমস্যা হচ্ছে।", 'ai-msg');
+            loadingMsg.remove();
+            appendMessage("দুঃখিত স্যার, API Key-তে সমস্যা হচ্ছে অথবা লিমিট শেষ হয়ে গেছে। দয়া করে Google AI Studio থেকে নতুন একটি Key নিয়ে দেখুন।", 'ai-msg');
+            console.error(e);
+        } finally {
+            btn.disabled = false;
         }
     }
 
@@ -67,6 +87,7 @@
         div.innerText = text;
         win.appendChild(div);
         win.scrollTop = win.scrollHeight;
+        return div;
     }
 </script>
 
